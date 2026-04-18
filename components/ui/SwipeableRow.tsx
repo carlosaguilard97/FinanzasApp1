@@ -1,51 +1,55 @@
 import { useRef } from "react";
-import { Platform, View, Text, Pressable, StyleSheet } from "react-native";
-import ReanimatedSwipeable, {
-  SwipeableMethods,
-} from "react-native-gesture-handler/ReanimatedSwipeable";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Platform, Text, Pressable, StyleSheet, Animated } from "react-native";
+import Swipeable from "react-native-gesture-handler/Swipeable";
 
 interface SwipeableRowProps {
   children: React.ReactNode;
   onDelete: () => void;
 }
 
-/**
- * En web: renderiza los children tal cual (sin swipe).
- * En móvil: envuelve con swipe-to-delete hacia la izquierda.
- */
 export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
-  const swipeRef = useRef<SwipeableMethods>(null);
+  const swipeRef = useRef<Swipeable>(null);
 
   if (Platform.OS === "web") {
     return <>{children}</>;
   }
 
-  const renderRightAction = () => (
-    <Pressable
-      onPress={() => {
-        swipeRef.current?.close();
-        onDelete();
-      }}
-      style={styles.deleteAction}
-    >
-      <Text style={styles.deleteIcon}>🗑️</Text>
-      <Text style={styles.deleteLabel}>Eliminar</Text>
-    </Pressable>
-  );
+  const renderRightAction = (
+    _progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>
+  ) => {
+    const scale = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [1, 0.5],
+      extrapolate: "clamp",
+    });
+
+    return (
+      <Pressable
+        onPress={() => {
+          swipeRef.current?.close();
+          onDelete();
+        }}
+        style={styles.deleteAction}
+      >
+        <Animated.Text style={[styles.deleteIcon, { transform: [{ scale }] }]}>
+          🗑️
+        </Animated.Text>
+        <Text style={styles.deleteLabel}>Eliminar</Text>
+      </Pressable>
+    );
+  };
 
   return (
-    <GestureHandlerRootView>
-      <ReanimatedSwipeable
-        ref={swipeRef}
-        friction={2}
-        rightThreshold={60}
-        renderRightActions={renderRightAction}
-        overshootRight={false}
-      >
-        {children}
-      </ReanimatedSwipeable>
-    </GestureHandlerRootView>
+    <Swipeable
+      ref={swipeRef}
+      friction={2}
+      rightThreshold={40}
+      renderRightActions={renderRightAction}
+      overshootRight={false}
+    >
+      {children}
+    </Swipeable>
   );
 }
 

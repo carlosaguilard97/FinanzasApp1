@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface HeroHeaderProps {
   label: string;
@@ -8,8 +9,10 @@ interface HeroHeaderProps {
 }
 
 export function HeroHeader({ label, value, subtitle, children }: HeroHeaderProps) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <Text style={styles.label}>{label}</Text>
       <Text style={styles.value}>{value}</Text>
       {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
@@ -22,7 +25,6 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#6366F1",
     paddingHorizontal: 24,
-    paddingTop:        48,
     paddingBottom:     32,
   },
   label:    { fontSize: 13, fontWeight: "500", color: "rgba(255,255,255,0.7)", marginBottom: 4 },
