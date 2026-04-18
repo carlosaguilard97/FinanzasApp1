@@ -14,8 +14,16 @@ export function useSuscripciones() {
 export function useCrearSuscripcion() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: Omit<Suscripcion, "id" | "categoria" | "cuenta">) =>
-      api.post("/suscripciones", body),
+    mutationFn: (body: {
+      nombre: string;
+      monto: number;
+      frecuencia: "semanal" | "mensual" | "anual";
+      proximo_cobro: string;
+      activa: boolean;
+      cuentaId?: number | null;
+      categoriaId?: number | null;
+      notas?: string;
+    }) => api.post("/suscripciones", body),
     onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
   });
 }

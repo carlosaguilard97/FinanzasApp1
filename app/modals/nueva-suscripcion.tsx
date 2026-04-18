@@ -7,6 +7,7 @@ import { useCrearSuscripcion } from "../../hooks/useSuscripciones";
 import { useCuentas } from "../../hooks/useCuentas";
 import { useCategorias } from "../../hooks/useCategorias";
 import { Input } from "../../components/ui/Input";
+import { DatePicker } from "../../components/ui/DatePicker";
 import { ChipSelector } from "../../components/ui/ChipSelector";
 import { ModalFooter } from "../../components/ui/ModalFooter";
 import { Toast } from "../../components/ui/Toast";
@@ -39,7 +40,16 @@ export default function NuevaSuscripcion() {
 
   const onSubmit = (data: FormData) => {
     crear.mutate(
-      { ...data, monto: Number(data.monto), activa: true },
+      {
+        nombre:        data.nombre,
+        monto:         Number(data.monto),
+        frecuencia:    data.frecuencia,
+        proximo_cobro: data.proximo_cobro,
+        activa:        true,
+        cuentaId:      data.cuentaId,
+        categoriaId:   data.categoriaId,
+        notas:         data.notas,
+      },
       {
         onSuccess: () => goBack(),
         onError:   (e) => show(e.message, "error"),
@@ -74,7 +84,7 @@ export default function NuevaSuscripcion() {
         </View>
 
         <Controller control={control} name="proximo_cobro" render={({ field: { value, onChange } }) => (
-          <Input label="Próximo cobro" placeholder="YYYY-MM-DD" value={value} onChangeText={onChange} error={errors.proximo_cobro?.message} hint="Formato: 2025-01-31" />
+          <DatePicker label="Próximo cobro" value={value} onChange={onChange} error={errors.proximo_cobro?.message} />
         )} />
 
         {cuentas.length > 0 && (

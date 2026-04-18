@@ -6,6 +6,7 @@ import { useCuentas } from "../../hooks/useCuentas";
 import { useCategorias } from "../../hooks/useCategorias";
 import { useCrearMovimiento } from "../../hooks/useMovimientos";
 import { Input } from "../../components/ui/Input";
+import { DatePicker } from "../../components/ui/DatePicker";
 import { ChipSelector } from "../../components/ui/ChipSelector";
 import { ModalFooter } from "../../components/ui/ModalFooter";
 import { Toast } from "../../components/ui/Toast";
@@ -39,7 +40,14 @@ export default function NuevoMovimiento() {
 
   const onSubmit = (data: FormData) => {
     crear.mutate(
-      { ...data, monto: Number(data.monto) },
+      {
+        tipo:        data.tipo,
+        monto:       Number(data.monto),
+        fecha:       data.fecha,
+        cuentaId:    data.cuentaId,
+        categoriaId: data.categoriaId,
+        descripcion: data.descripcion,
+      },
       {
         onSuccess: () => goBack(),
         onError:   (e) => show(e.message, "error"),
@@ -111,7 +119,7 @@ export default function NuevoMovimiento() {
         </View>
 
         <Controller control={control} name="fecha" render={({ field: { value, onChange } }) => (
-          <Input label="Fecha" placeholder="YYYY-MM-DD" value={value} onChangeText={onChange} error={errors.fecha?.message} hint="Formato: 2025-01-31" />
+          <DatePicker label="Fecha" value={value} onChange={onChange} error={errors.fecha?.message} maximumDate={new Date()} />
         )} />
 
         <Controller control={control} name="descripcion" render={({ field: { value, onChange } }) => (

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { useCrearMeta, useAportarMeta } from "../../hooks/useMetas";
 import { useCuentas } from "../../hooks/useCuentas";
 import { Input } from "../../components/ui/Input";
+import { DatePicker } from "../../components/ui/DatePicker";
 import { ChipSelector } from "../../components/ui/ChipSelector";
 import { ModalFooter } from "../../components/ui/ModalFooter";
 import { Toast } from "../../components/ui/Toast";
@@ -51,7 +52,13 @@ export default function NuevaMeta() {
 
   const onSubmitMeta = (data: MetaForm) => {
     crear.mutate(
-      { ...data, monto_objetivo: Number(data.monto_objetivo) },
+      {
+        nombre:         data.nombre,
+        monto_objetivo: Number(data.monto_objetivo),
+        fecha_limite:   data.fecha_limite || undefined,
+        cuentaId:       data.cuentaId,
+        notas:          data.notas,
+      },
       { onSuccess: () => goBack(), onError: (e) => show(e.message, "error") }
     );
   };
@@ -100,7 +107,12 @@ export default function NuevaMeta() {
         )} />
 
         <Controller control={metaForm.control} name="fecha_limite" render={({ field: { value, onChange } }) => (
-          <Input label="Fecha límite (opcional)" placeholder="YYYY-MM-DD" value={value} onChangeText={onChange} hint="Formato: 2025-12-31" />
+          <DatePicker
+            label="Fecha límite (opcional)"
+            value={value ?? ""}
+            onChange={onChange}
+            minimumDate={new Date()}
+          />
         )} />
 
         {cuentas.length > 0 && (

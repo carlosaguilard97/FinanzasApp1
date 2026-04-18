@@ -1,21 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, FlatList, Pressable, StyleSheet, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useMovimientos, useEliminarMovimiento, type MovimientosFiltros } from "../../hooks/useMovimientos";
 import { useCuentas } from "../../hooks/useCuentas";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
+import { SwipeableRow } from "../../components/ui/SwipeableRow";
 import { FAB } from "../../components/ui/FAB";
 import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { formatCurrency, formatDate } from "../../lib/utils";
 import type { Movimiento } from "../../types";
 
 export default function Movimientos() {
   const router = useRouter();
+  const isMobile = useIsMobile();
+  const { cuentaId: cuentaIdParam } = useLocalSearchParams<{ cuentaId?: string }>();
+
   const [filtros, setFiltros]   = useState<MovimientosFiltros>({ page: 1, limit: 20 });
   const [toDelete, setToDelete] = useState<Movimiento | null>(null);
   const { toast, show, hide }   = useToast();
+
+  // Cuando llega el param desde la pantalla de Cuentas, aplica el filtro
+  useEffect(() => {
+    if (cuentaIdParam) {
+      setFiltros((f) => ({ ...f, cuentaId: Number(cuentaIdParam), page: 1 }));
+    }
+  }, [cuentaIdParam]);
 
   const { data, isLoading }      = useMovimientos(filtros);
   const { data: cuentas = [] }   = useCuentas();
@@ -112,7 +124,8 @@ export default function Movimientos() {
         renderItem={({ item: m, index }) => {
           const isFirst = index === 0;
           const isLast  = index === movimientos.length - 1;
-          return (
+
+          const rowContent = (
             <View style={[
               styles.row,
               isFirst && styles.rowFirst,
@@ -132,27 +145,42 @@ export default function Movimientos() {
                 <Text style={[styles.amount, { color: m.tipo === "ingreso" ? "#10B981" : "#EF4444" }]}>
                   {m.tipo === "ingreso" ? "+" : "-"}{formatCurrency(m.monto)}
                 </Text>
-                <Pressable onPress={() => setToDelete(m)} hitSlop={12} style={styles.deleteBtn}>
-                  <Text style={styles.deleteText}>Eliminar</Text>
-                </Pressable>
+                {/* Botón eliminar solo en desktop */}
+                {!isMobile && (
+                  <Pressable onPress={() => setToDelete(m)} hitSlop={12} style={styles.deleteBtn}>
+                    <Text style={styles.deleteText}>Eliminar</Text>
+                  </Pressable>
+                )}
               </View>
             </View>
+          );
+
+          return !isMobile ? rowContent : (
+            <SwipeableRow onDelete={() => eliminar.mutate(m.id, {
+              onSuccess: () => show("Movimiento eliminado", "success"),
+              onError:   () => show("No se pudo eliminar", "error"),
+            })}>
+              {rowContent}
+            </SwipeableRow>
           );
         }}
       />
 
       <FAB onPress={() => router.push("/modals/nuevo-movimiento")} />
 
-      <ConfirmDialog
-        visible={!!toDelete}
-        title="Eliminar movimiento"
-        message={`¿Eliminar "${toDelete?.descripcion || toDelete?.categoria?.nombre}"? Esta acción no se puede deshacer.`}
-        confirmLabel="Sí, eliminar"
-        cancelLabel="Cancelar"
-        onConfirm={handleEliminar}
-        onCancel={() => setToDelete(null)}
-        danger
-      />
+      {/* ConfirmDialog solo en desktop */}
+      {!isMobile && (
+        <ConfirmDialog
+          visible={!!toDelete}
+          title="Eliminar movimiento"
+          message={`¿Eliminar "${toDelete?.descripcion || toDelete?.categoria?.nombre}"? Esta acción no se puede deshacer.`}
+          confirmLabel="Sí, eliminar"
+          cancelLabel="Cancelar"
+          onConfirm={handleEliminar}
+          onCancel={() => setToDelete(null)}
+          danger
+        />
+      )}
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hide} />
     </View>
   );

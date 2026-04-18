@@ -5,10 +5,12 @@ import { useCuentas, useEliminarCuenta } from "../../hooks/useCuentas";
 import { Card } from "../../components/ui/Card";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
+import { SwipeableRow } from "../../components/ui/SwipeableRow";
 import { FAB } from "../../components/ui/FAB";
 import { HeroHeader } from "../../components/ui/HeroHeader";
 import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { formatCurrency } from "../../lib/utils";
 import type { Cuenta } from "../../types";
 
@@ -23,6 +25,7 @@ const TIPO_EMOJI: Record<string, string> = {
 
 export default function Cuentas() {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const { data: cuentas = [], isLoading } = useCuentas();
   const eliminar = useEliminarCuenta();
   const [toDelete, setToDelete] = useState<Cuenta | null>(null);
@@ -30,13 +33,50 @@ export default function Cuentas() {
 
   const balanceTotal = cuentas.reduce((acc, c) => acc + c.saldo_actual, 0);
 
-  const handleEliminar = () => {
-    if (!toDelete) return;
-    eliminar.mutate(toDelete.id, {
+  const handleEliminar = (cuenta?: Cuenta) => {
+    const target = cuenta ?? toDelete;
+    if (!target) return;
+    eliminar.mutate(target.id, {
       onSuccess: () => { setToDelete(null); show("Cuenta eliminada", "success"); },
       onError:   (e) => { setToDelete(null); show(e.message, "error"); },
     });
   };
+
+  const CuentaCard = ({ c }: { c: Cuenta }) => (
+    <Pressable
+      onPress={() => router.push({ pathname: "/(tabs)/movimientos", params: { cuentaId: String(c.id) } })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+    >
+      <Card>
+        <View style={styles.row}>
+          <View style={styles.iconWrap}>
+            <Text style={{ fontSize: 22 }}>{TIPO_EMOJI[c.tipo]}</Text>
+          </View>
+          <View style={styles.info}>
+            <Text style={styles.name}>{c.nombre}</Text>
+            <Text style={styles.sub}>{TIPO_LABEL[c.tipo]} · {c.moneda}</Text>
+            {/* En pantalla ancha mostramos el hint de acción */}
+            {!isMobile && <Text style={styles.verMovimientos}>Ver movimientos →</Text>}
+          </View>
+          <View style={styles.right}>
+            <Text style={[styles.balance, { color: c.saldo_actual >= 0 ? "#111827" : "#EF4444" }]}>
+              {formatCurrency(c.saldo_actual)}
+            </Text>
+            {/* En pantalla ancha mostramos el botón eliminar explícito */}
+            {!isMobile && (
+              <Pressable
+                onPress={(e) => { e.stopPropagation(); setToDelete(c); }}
+                hitSlop={12}
+                style={styles.deleteBtn}
+              >
+                <Text style={styles.deleteText}>Eliminar</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </Card>
+    </Pressable>
+  );
 
   return (
     <View style={styles.screen}>
@@ -62,41 +102,33 @@ export default function Cuentas() {
             />
           )
         }
-        renderItem={({ item: c }) => (
-          <Card>
-            <View style={styles.row}>
-              <View style={styles.iconWrap}>
-                <Text style={{ fontSize: 22 }}>{TIPO_EMOJI[c.tipo]}</Text>
-              </View>
-              <View style={styles.info}>
-                <Text style={styles.name}>{c.nombre}</Text>
-                <Text style={styles.sub}>{TIPO_LABEL[c.tipo]} · {c.moneda}</Text>
-              </View>
-              <View style={styles.right}>
-                <Text style={[styles.balance, { color: c.saldo_actual >= 0 ? "#111827" : "#EF4444" }]}>
-                  {formatCurrency(c.saldo_actual)}
-                </Text>
-                <Pressable onPress={() => setToDelete(c)} hitSlop={12} style={styles.deleteBtn}>
-                  <Text style={styles.deleteText}>Eliminar</Text>
-                </Pressable>
-              </View>
-            </View>
-          </Card>
-        )}
+        renderItem={({ item: c }) =>
+          !isMobile ? (
+            <CuentaCard c={c} />
+          ) : (
+            <SwipeableRow onDelete={() => handleEliminar(c)}>
+              <CuentaCard c={c} />
+            </SwipeableRow>
+          )
+        }
       />
 
       <FAB onPress={() => router.push("/modals/nueva-cuenta")} />
 
-      <ConfirmDialog
-        visible={!!toDelete}
-        title="Eliminar cuenta"
-        message={`¿Eliminar "${toDelete?.nombre}"? Solo es posible si no tiene movimientos registrados.`}
-        confirmLabel="Sí, eliminar"
-        cancelLabel="Cancelar"
-        onConfirm={handleEliminar}
-        onCancel={() => setToDelete(null)}
-        danger
-      />
+      {/* ConfirmDialog solo en pantalla ancha */}
+      {!isMobile && (
+        <ConfirmDialog
+          visible={!!toDelete}
+          title="Eliminar cuenta"
+          message={`¿Eliminar "${toDelete?.nombre}"? Solo es posible si no tiene movimientos registrados.`}
+          confirmLabel="Sí, eliminar"
+          cancelLabel="Cancelar"
+          onConfirm={() => handleEliminar()}
+          onCancel={() => setToDelete(null)}
+          danger
+        />
+      )}
+
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hide} />
     </View>
   );
@@ -110,6 +142,7 @@ const styles = StyleSheet.create({
   info:    { flex: 1 },
   name:    { fontSize: 15, fontWeight: "700", color: "#111827" },
   sub:     { fontSize: 12, color: "#9CA3AF", marginTop: 2 },
+  verMovimientos: { fontSize: 12, color: "#6366F1", fontWeight: "600", marginTop: 4 },
   right:   { alignItems: "flex-end", gap: 4 },
   balance: { fontSize: 16, fontWeight: "700" },
   deleteBtn:  { paddingVertical: 2 },

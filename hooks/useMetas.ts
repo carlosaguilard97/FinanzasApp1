@@ -14,8 +14,13 @@ export function useMetas() {
 export function useCrearMeta() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: Omit<Meta, "id" | "monto_actual" | "completada" | "aportaciones" | "cuenta">) =>
-      api.post("/metas", body),
+    mutationFn: (body: {
+      nombre: string;
+      monto_objetivo: number;
+      fecha_limite?: string | null;
+      cuentaId?: number | null;
+      notas?: string;
+    }) => api.post("/metas", body),
     onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
   });
 }
