@@ -203,27 +203,63 @@ EXPO_PUBLIC_API_URL=http://localhost:3000/api
 
 ## 6. Componentes UI
 
-Todos los componentes viven en `components/ui/` y están construidos sobre primitivos de React Native con clases NativeWind.
+Todos los componentes viven en `components/ui/` y están construidos con `StyleSheet` de React Native para garantizar consistencia visual entre plataformas.
 
 | Componente | Descripción |
 |---|---|
-| `Button` | Variantes: primary, secondary, danger, ghost. Soporta estado `loading` con spinner. |
-| `Input` | TextInput con label, mensaje de error inline y hint descriptivo. |
-| `Card` | Contenedor con fondo blanco, borde gris y sombra sutil. |
-| `ChipSelector` | Selector de opciones múltiples tipo chip. Soporta scroll horizontal y deselección (`nullable`). |
-| `ConfirmDialog` | Modal de confirmación con variante `danger` para acciones destructivas. |
-| `EmptyState` | Pantalla vacía con ícono, título, descripción y CTA opcional. |
+| `Button` | Variantes: primary, secondary, danger, ghost. Tamaños: lg, md, sm. Soporta `loading` con spinner y sombra de color en variantes sólidas. |
+| `Input` | TextInput con label, error inline con ícono y hint descriptivo. Fondo y borde cambian en estado de error. |
+| `Card` | Contenedor con fondo blanco, borde `#E5E7EB` y sombra sutil. |
+| `ChipSelector` | Selector de opciones tipo chip con borde visible. Soporta scroll horizontal y deselección (`nullable`). |
+| `ConfirmDialog` | Modal de confirmación con ícono contextual. Variante `danger` para acciones destructivas. |
+| `EmptyState` | Estado vacío con emoji, título, descripción y CTA opcional. |
+| `FAB` | Botón flotante de acción principal. Posición fija `bottom:28 right:20` con sombra de color indigo. |
+| `HeroHeader` | Header de pantalla con fondo `primary`, balance/total prominente y slot para contenido adicional. |
+| `ModalFooter` | Barra fija al fondo de modales con el CTA principal separado del scroll. |
 | `SectionHeader` | Título de sección con acción secundaria alineada a la derecha. |
-| `Toast` | Notificación temporal (2.5s) con tipos: success, error, info. |
+| `SwipeableRow` | Envuelve un item con swipe-to-delete en móvil/tablet. En desktop renderiza los children sin swipe. |
+| `Toast` | Notificación temporal con tipos: success (2.5s), error (3s), warning (3s), info (2.5s). |
+| `DatePicker` | Selector de fecha. En web usa `<input type="date">` nativo del navegador. En móvil usa `@react-native-community/datetimepicker` (picker nativo del SO). |
 
 ---
 
-## 7. Decisiones de Diseño
+## 7. Comportamiento Responsivo
+
+La app adapta su UX según el dispositivo usando el hook `useIsMobile`:
+
+```
+useIsMobile() → true  si: dispositivo nativo (iOS/Android)
+                          O web con ancho ≤ 1366px (móvil + tablet landscape)
+             → false si: web con ancho > 1366px (desktop)
+```
+
+| Comportamiento | Móvil / Tablet (≤1366px) | Desktop (>1366px) |
+|---|---|---|
+| Eliminar cuenta | Swipe izquierda | Botón "Eliminar" + ConfirmDialog |
+| Eliminar movimiento | Swipe izquierda | Botón "Eliminar" + ConfirmDialog |
+| Hint de navegación en cuentas | Oculto (tap implícito) | "Ver movimientos →" visible |
+
+---
+
+## 8. Navegación entre Pantallas
+
+La pantalla Cuentas permite navegar a Movimientos con el filtro de cuenta preseleccionado:
+
+```
+Cuentas → tap en card → Movimientos con cuentaId en params
+```
+
+Movimientos recibe el param con `useLocalSearchParams` y lo aplica via `useEffect` para soportar el caso donde el tab ya estaba montado.
+
+---
+
+## 9. Decisiones de Diseño
 
 - **Sin autenticación en fase 1:** todos los endpoints son públicos, se asume un solo usuario
 - **Saldo calculado dinámicamente:** el saldo de cada cuenta se recalcula en cada consulta (saldo_inicial + movimientos) para garantizar consistencia
 - **NativeWind v2 sobre v4:** v4 requiere `react-native-worklets` que genera conflictos con Expo SDK 55; v2 es estable con el stack actual
-- **Sin Zustand en fase 1:** el estado de UI (modales, confirmaciones, toasts) se maneja localmente con `useState`; se agregará si surge necesidad de estado compartido entre pantallas
+- **StyleSheet sobre NativeWind para componentes críticos:** los componentes UI usan `StyleSheet` de React Native para garantizar que los estilos se apliquen correctamente en todas las plataformas
+- **Sin Zustand en fase 1:** el estado de UI se maneja localmente con `useState`
+- **Swipe sin ConfirmDialog en móvil:** el gesto de swipe es suficientemente intencional; el ConfirmDialog solo aparece en desktop donde un click accidental es más probable
 - **Moneda por cuenta:** cada cuenta tiene su propia moneda, sin conversión entre ellas en fase 1
 - **Timestamps UTC:** fechas almacenadas en UTC, conversión a zona horaria local en el cliente con `Intl.DateTimeFormat`
-- **Confirmación antes de eliminar:** todas las acciones destructivas pasan por `ConfirmDialog` para evitar eliminaciones accidentales

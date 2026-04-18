@@ -171,8 +171,8 @@ app/                          # Solo rutas — Expo Router
 ├── (tabs)/
 │   ├── _layout.tsx           # Tab navigator (5 tabs con íconos emoji)
 │   ├── index.tsx             # Dashboard
-│   ├── movimientos.tsx       # Lista + filtro por tipo
-│   ├── cuentas.tsx           # Lista de cuentas
+│   ├── movimientos.tsx       # Lista + filtros por cuenta y tipo
+│   ├── cuentas.tsx           # Lista de cuentas + navegación a movimientos
 │   ├── suscripciones.tsx     # Lista + toggle activo
 │   └── metas.tsx             # Lista + progreso visual
 └── modals/                   # Formularios como pantallas modales
@@ -187,23 +187,29 @@ components/ui/                # Componentes reutilizables
 ├── Card.tsx
 ├── ChipSelector.tsx
 ├── ConfirmDialog.tsx
+├── DatePicker.tsx
 ├── EmptyState.tsx
+├── FAB.tsx
+├── HeroHeader.tsx
 ├── Input.tsx
+├── ModalFooter.tsx
 ├── SectionHeader.tsx
+├── SwipeableRow.tsx
 └── Toast.tsx
 
-hooks/                        # Lógica de datos y UI
+hooks/
 ├── useCuentas.ts
 ├── useMovimientos.ts
 ├── useCategorias.ts
 ├── useSuscripciones.ts
 ├── useMetas.ts
-└── useToast.ts
+├── useToast.ts
+└── useIsMobile.ts            # Detecta móvil/tablet vs desktop por ancho de ventana
 
 lib/
 ├── api.ts                    # fetch wrapper tipado
 ├── queryClient.ts            # configuración React Query
-└── utils.ts                  # formatCurrency, formatDate, diasHasta, todayISO
+└── utils.ts                  # formatCurrency, formatDate, diasHasta, todayISO, useGoBack
 
 types/
 └── index.ts                  # Interfaces: Cuenta, Movimiento, Categoria, etc.
